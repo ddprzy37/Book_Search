@@ -1,7 +1,5 @@
-// see SignupForm.js for comments
 import { useState } from 'react';
 import { Form, Button, Alert } from 'react-bootstrap';
-
 import { loginUser } from '../utils/API';
 import Auth from '../utils/auth';
 
@@ -9,6 +7,7 @@ const LoginForm = () => {
   const [userFormData, setUserFormData] = useState({ email: '', password: '' });
   const [validated] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -25,11 +24,13 @@ const LoginForm = () => {
       event.stopPropagation();
     }
 
+    setLoading(true);
+
     try {
       const response = await loginUser(userFormData);
-
       if (!response.ok) {
-        throw new Error('something went wrong!');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Something went wrong!');
       }
 
       const { token, user } = await response.json();
@@ -38,13 +39,10 @@ const LoginForm = () => {
     } catch (err) {
       console.error(err);
       setShowAlert(true);
+    } finally {
+      setLoading(false);
+      setUserFormData({ email: '', password: '' });
     }
-
-    setUserFormData({
-      username: '',
-      email: '',
-      password: '',
-    });
   };
 
   return (
@@ -79,10 +77,10 @@ const LoginForm = () => {
           <Form.Control.Feedback type='invalid'>Password is required!</Form.Control.Feedback>
         </Form.Group>
         <Button
-          disabled={!(userFormData.email && userFormData.password)}
+          disabled={!(userFormData.email && userFormData.password) || loading}
           type='submit'
           variant='success'>
-          Submit
+          {loading ? 'Loading...' : 'Submit'}
         </Button>
       </Form>
     </>
